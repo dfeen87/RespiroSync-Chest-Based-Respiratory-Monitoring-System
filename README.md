@@ -4,19 +4,25 @@ Turn Any Smartphone Into a Clinical-Grade Respiratory Monitor
 A chest-mounted phone + this algorithm = $500 sleep tracker functionality for $0.
 
 What Is This?
+
 RespiroSync uses only your phone's built-in gyroscope and accelerometer to detect:
 
 🫁 Breathing rate (accurate to ±1 BPM)
+
 😴 Sleep stages (Awake, Light, Deep, REM)
+
 ⚠️ Breathing irregularities (apnea detection)
+
 📊 Sleep quality metrics (efficiency, restlessness)
 
 No wristband. No ring. No expensive hardware.
+
 Just position your phone on your chest (using a vest, compression shirt, or band).
 
 The Innovation
 Most sleep trackers use wrist-based heart rate or expensive chest straps.
 We discovered that chest-mounted phone sensors can directly measure respiratory mechanics:
+
 Gyroscope + Accelerometer on chest
          ↓
 Isolate breathing frequency (0.1-0.5 Hz bandpass filter)
@@ -24,6 +30,7 @@ Isolate breathing frequency (0.1-0.5 Hz bandpass filter)
 Detect breath cycles via peak detection
          ↓
 Calculate BPM + classify sleep stages
+
 This is the algorithm that makes it work.
 
 Quick Start
@@ -54,18 +61,27 @@ Features
 Core Capabilities
 
 ✅ Real-time breathing rate (BPM)
+
 ✅ Breath depth/amplitude analysis
+
 ✅ Sleep stage classification (4-stage model)
+
 ✅ Apnea detection (>10 sec pause)
+
 ✅ Movement/restlessness tracking
+
 ✅ Sleep quality scoring
 
 Technical Features
 
 ⚡ Low power: <2% CPU, <10MB RAM
+
 🔋 Battery efficient: <5% drain overnight
+
 🔒 Privacy-first: 100% on-device processing
+
 📱 Universal: Works with any phone (iPhone 6+, Android 5.0+)
+
 🎯 Accurate: Clinically validated respiratory detection
 
 
@@ -139,11 +155,11 @@ Areas we'd love help with:
 
 Citation
 If you use this in academic research, please cite:
-bibtex@software{respirosync2025,
-  author = {[Your Name]},
+dfeen87@gmail.com
+  author = {Don Michael Feeney Jr},
   title = {RespiroSync: Chest-Mounted Respiratory Monitoring via Smartphone Sensors},
   year = {2025},
-  url = {https://github.com/[yourusername]/respirosync}
+  url = {https://github.com/dfeen87/RespiroSync-Chest-Based-Respiratory-Monitoring-System}
 }
 
 License
@@ -163,6 +179,7 @@ Story Behind This
 I kept coming up with ideas for health tech, but everything required expensive hardware.
 Then I realized: phones already have the sensors. We just needed the algorithm.
 This is that algorithm. Free for the world to use.
+
 If it helps you build something amazing, just tell people where it came from. ✌️
 
 Contact
