@@ -5,21 +5,42 @@
 extern "C" {
 #endif
 
-#include <stdint.h> /* uint64_t */
+#include <stdint.h>
 
 /* ============================================================================
- * RespiroSync Core Engine - C API
- * Stable binding surface for iOS/Android (JNI/ObjC/Swift)
+ * RespiroSync™ Core Engine
+ * Stable C API for cross-platform respiratory monitoring
+ *
+ * Version: 1.0.0
+ * Status:  Stable public interface
+ *
+ * This header defines the binding contract for the RespiroSync core engine.
+ * The implementation is provided by a C++ backend and exposed via an opaque
+ * handle for ABI stability across platforms and languages.
  * ============================================================================
  */
 
-/* Opaque engine handle (implementation is C++ RespiroSync::RespiroEngine) */
+/* -----------------------------
+ * Versioning
+ * ----------------------------- */
+#define RESPIROSYNC_VERSION_MAJOR 1
+#define RESPIROSYNC_VERSION_MINOR 0
+#define RESPIROSYNC_VERSION_PATCH 0
+
+#define RESPIROSYNC_VERSION_STRING "1.0.0"
+
+/* -----------------------------
+ * Opaque Engine Handle
+ * ----------------------------- */
+/* The concrete type is RespiroSync::RespiroEngine (C++),
+ * intentionally hidden from consumers.
+ */
 typedef void* RespiroHandle;
 
 /* -----------------------------
- * Sleep Stage
+ * Sleep Stage Classification
  * ----------------------------- */
-typedef enum SleepStage {
+typedef enum {
     AWAKE = 0,
     LIGHT_SLEEP = 1,
     DEEP_SLEEP = 2,
@@ -30,34 +51,46 @@ typedef enum SleepStage {
 /* -----------------------------
  * Sleep / Respiratory Metrics
  * ----------------------------- */
-typedef struct SleepMetrics {
+typedef struct {
     SleepStage current_stage;
-    float confidence;               /* 0.0 - 1.0 */
-    float breathing_rate_bpm;       /* breaths/min */
-    float breathing_regularity;     /* 0.0 - 1.0 (higher = more consistent) */
-    float movement_intensity;       /* 0.0 - 1.0 (higher = more restless) */
+
+    float confidence;               /* 0.0 – 1.0 heuristic confidence */
+    float breathing_rate_bpm;       /* breaths per minute */
+    float breathing_regularity;     /* 0.0 – 1.0 (higher = more consistent) */
+    float movement_intensity;       /* 0.0 – 1.0 (higher = more movement) */
+
     int   breath_cycles_detected;
-    int   possible_apnea;           /* 0/1 (C-friendly bool) */
+    int   possible_apnea;           /* boolean (0 = false, 1 = true) */
 } SleepMetrics;
 
 /* -----------------------------
- * Lifecycle
+ * Lifecycle Management
  * ----------------------------- */
-RespiroHandle respiro_create(void);
-void         respiro_destroy(RespiroHandle handle);
 
-/* Start a new session (resets internal state) */
-void respiro_start_session(RespiroHandle handle, uint64_t timestamp_ms);
+/* Create a new RespiroSync engine instance */
+RespiroHandle respiro_create(void);
+
+/* Destroy an engine instance and release all resources */
+void respiro_destroy(RespiroHandle handle);
+
+/* Reset internal state and begin a new monitoring session */
+void respiro_start_session(
+    RespiroHandle handle,
+    uint64_t timestamp_ms
+);
 
 /* -----------------------------
- * Sensor Ingestion
+ * Sensor Data Ingestion
  * ----------------------------- */
+
+/* Feed a gyroscope sample (rad/s or device-native units) */
 void respiro_feed_gyro(
     RespiroHandle handle,
     float x, float y, float z,
     uint64_t timestamp_ms
 );
 
+/* Feed an accelerometer sample (m/s^2 or device-native units) */
 void respiro_feed_accel(
     RespiroHandle handle,
     float x, float y, float z,
@@ -67,6 +100,8 @@ void respiro_feed_accel(
 /* -----------------------------
  * Metrics Retrieval
  * ----------------------------- */
+
+/* Retrieve the latest computed sleep and respiratory metrics */
 void respiro_get_metrics(
     RespiroHandle handle,
     uint64_t timestamp_ms,
