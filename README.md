@@ -736,7 +736,7 @@ If you use RespiroSync in academic or technical work, please cite:
 
 ## License
 
-See [`LICENSE`](LICENSE) for complete details.
+MIT License - see [`LICENSE`](LICENSE) file.
 
 ---
 
