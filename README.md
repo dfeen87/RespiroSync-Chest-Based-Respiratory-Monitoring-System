@@ -736,13 +736,6 @@ If you use RespiroSync in academic or technical work, please cite:
 
 ## License
 
-RespiroSync is licensed under the **MIT License**.
-
-- ✅ Commercial use permitted
-- ✅ Modification and distribution allowed
-- ✅ Private use allowed
-- ℹ️ Attribution required ("Powered by RespiroSync™")
-
 See [`LICENSE`](LICENSE) for complete details.
 
 ---
