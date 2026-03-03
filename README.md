@@ -3,7 +3,6 @@
 
 # Smartphone Based Chest Monitoring
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)](https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring)
 [![C++](https://img.shields.io/badge/C++-17-00599C.svg)](https://isocpp.org/)
@@ -736,7 +735,8 @@ If you use RespiroSync in academic or technical work, please cite:
 
 ## License
 
-MIT License - see [`LICENSE`](LICENSE) file.
+This project is available for **non‑commercial use only** under the terms of the included LICENSE file.  
+Commercial use requires a separate paid license.
 
 ---
 
