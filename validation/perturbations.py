@@ -1,6 +1,10 @@
 """
 Semi-synthetic perturbation helpers (PAPER.md §5.1).
 
+Provides `_apply_drift()` and `_apply_pause()`, which apply controlled
+semi-synthetic transformations to respiratory signals to simulate frequency
+drift (rising respiratory rate) and intermittent breathing pauses respectively.
+
 Shared by validate_bidmc.py and multi_record_validation.py to avoid
 code duplication.
 """

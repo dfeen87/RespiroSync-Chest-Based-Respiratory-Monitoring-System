@@ -139,8 +139,8 @@ _JWT_EXPIRY_HOURS = 24
 # ── Production secret guard ──────────────────────────────────────────────────────
 _ENV = os.environ.get("RESPIROSYNC_ENV") or os.environ.get("FLASK_ENV", "")
 if _ENV == "production":
-    _default_jwt = "API_KEY" not in os.environ or _JWT_SECRET == "changeme-jwt-secret"
-    _default_api = "JWT_SECRET" not in os.environ or _API_KEY == "changeme"
+    _default_jwt = "JWT_SECRET" not in os.environ or _JWT_SECRET == "changeme-jwt-secret"
+    _default_api = "API_KEY" not in os.environ or _API_KEY == "changeme"
     if _default_jwt or _default_api:
         logging.critical(
             "FATAL: JWT_SECRET and API_KEY must be explicitly set in production. "
