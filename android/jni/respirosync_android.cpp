@@ -31,15 +31,18 @@ Java_com_respirosync_RespiroSyncEngine_nativeCreate(JNIEnv* env, jobject thiz) {
 
 JNIEXPORT void JNICALL
 Java_com_respirosync_RespiroSyncEngine_nativeDestroy(JNIEnv* env, jobject thiz, jlong handle) {
-    respiro_destroy(reinterpret_cast<RespiroHandle>(handle));
+    RespiroHandle h = reinterpret_cast<RespiroHandle>(handle);
+    if (!h) return;
+    respiro_destroy(h);
     LOGD("Native engine destroyed");
 }
 
 JNIEXPORT void JNICALL
 Java_com_respirosync_RespiroSyncEngine_nativeStartSession(JNIEnv* env, jobject thiz, 
                                                           jlong handle, jlong timestamp_ms) {
-    respiro_start_session(reinterpret_cast<RespiroHandle>(handle), 
-                         static_cast<uint64_t>(timestamp_ms));
+    RespiroHandle h = reinterpret_cast<RespiroHandle>(handle);
+    if (!h) return;
+    respiro_start_session(h, static_cast<uint64_t>(timestamp_ms));
     LOGD("Session started");
 }
 
@@ -48,9 +51,9 @@ Java_com_respirosync_RespiroSyncEngine_nativeFeedGyroscope(JNIEnv* env, jobject 
                                                            jlong handle,
                                                            jfloat x, jfloat y, jfloat z,
                                                            jlong timestamp_ms) {
-    respiro_feed_gyro(reinterpret_cast<RespiroHandle>(handle),
-                     x, y, z,
-                     static_cast<uint64_t>(timestamp_ms));
+    RespiroHandle h = reinterpret_cast<RespiroHandle>(handle);
+    if (!h) return;
+    respiro_feed_gyro(h, x, y, z, static_cast<uint64_t>(timestamp_ms));
 }
 
 JNIEXPORT void JNICALL
@@ -58,18 +61,18 @@ Java_com_respirosync_RespiroSyncEngine_nativeFeedAccelerometer(JNIEnv* env, jobj
                                                                jlong handle,
                                                                jfloat x, jfloat y, jfloat z,
                                                                jlong timestamp_ms) {
-    respiro_feed_accel(reinterpret_cast<RespiroHandle>(handle),
-                      x, y, z,
-                      static_cast<uint64_t>(timestamp_ms));
+    RespiroHandle h = reinterpret_cast<RespiroHandle>(handle);
+    if (!h) return;
+    respiro_feed_accel(h, x, y, z, static_cast<uint64_t>(timestamp_ms));
 }
 
 JNIEXPORT jobject JNICALL
 Java_com_respirosync_RespiroSyncEngine_nativeGetMetrics(JNIEnv* env, jobject thiz,
                                                         jlong handle, jlong timestamp_ms) {
+    RespiroHandle h = reinterpret_cast<RespiroHandle>(handle);
+    if (!h) return nullptr;
     SleepMetrics metrics;
-    respiro_get_metrics(reinterpret_cast<RespiroHandle>(handle),
-                       static_cast<uint64_t>(timestamp_ms),
-                       &metrics);
+    respiro_get_metrics(h, static_cast<uint64_t>(timestamp_ms), &metrics);
     
     // Create Java SleepMetrics object with proper exception handling
     jclass metricsClass = env->FindClass("com/respirosync/SleepMetrics");

@@ -86,6 +86,8 @@ def load_bidmc_record(record_id: int = 1, target_fs: int = TARGET_FS) -> dict:
     # Replace NaN / Inf samples with linear interpolation
     bad = ~np.isfinite(signal)
     if bad.any():
+        if bad.all():
+            raise ValueError("All samples are NaN/Inf — cannot interpolate")
         xp = np.where(~bad)[0]
         signal[bad] = np.interp(np.where(bad)[0], xp, signal[xp])
 

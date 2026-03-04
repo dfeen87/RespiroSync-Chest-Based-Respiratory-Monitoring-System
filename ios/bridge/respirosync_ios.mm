@@ -55,6 +55,10 @@
     if (self) {
         motionManager = [[CMMotionManager alloc] init];
         coreEngine = respiro_create();
+        if (!coreEngine) {
+            NSLog(@"RespiroSync: Failed to allocate core engine");
+            return nil;
+        }
         sensorQueue = [[NSOperationQueue alloc] init];
         sensorQueue.maxConcurrentOperationCount = 1;
         isRunning = NO;
