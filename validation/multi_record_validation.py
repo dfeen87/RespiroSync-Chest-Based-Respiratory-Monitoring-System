@@ -31,7 +31,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from scipy.signal import resample
 
 # Allow importing from the repo root
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -47,47 +46,13 @@ from validation.metrics import (  # noqa: E402
     rms_envelope,
     fft_peak_shift,
 )
+from validation.perturbations import _apply_drift, _apply_pause  # noqa: E402
 
 # Minimum signal duration for the three regimes (seconds)
 _MIN_DURATION_S = 90
 
 # Output directory (repo root / results)
 RESULTS_DIR = Path(__file__).parent.parent / "results"
-
-
-# ── Semi-synthetic perturbations (identical to validate_bidmc.py) ──────────────
-
-def _apply_drift(signal: np.ndarray, fs: float, onset_s: float) -> np.ndarray:
-    """
-    Semi-synthetic frequency drift (PAPER.md §5.1 row 2).
-
-    After onset_s, compress the tail of the signal in time to simulate a
-    rising respiratory rate (frequency drift).  Preserves real signal
-    morphology in the stable portion while introducing a controlled perturbation.
-    """
-    onset = int(onset_s * fs)
-    stable_part = signal[:onset].copy()
-    tail = signal[onset:]
-    tail_fast = resample(tail, int(len(tail) * 1.6))[:len(tail)]
-    return np.concatenate([stable_part, tail_fast])
-
-
-def _apply_pause(
-    signal: np.ndarray,
-    fs: float,
-    onset_s: float,
-    duration_s: float = 8.0,
-) -> np.ndarray:
-    """
-    Semi-synthetic intermittent pause (PAPER.md §5.1 row 3).
-
-    Near-zeros the amplitude for duration_s seconds starting at onset_s.
-    """
-    out = signal.copy()
-    start = int(onset_s * fs)
-    end = min(int((onset_s + duration_s) * fs), len(out))
-    out[start:end] *= 0.03  # near-zero; matches §5.1 "reduced amplitude"
-    return out
 
 
 # ── Baseline detection-latency helpers ────────────────────────────────────────

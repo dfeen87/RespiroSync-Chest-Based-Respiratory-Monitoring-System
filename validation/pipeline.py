@@ -59,6 +59,12 @@ def bandpass_filter(
     -------
     Bandpass-filtered signal of the same length.
     """
+    if fs <= 0:
+        raise ValueError(f"Sample rate must be positive, got fs={fs}")
+    if not (0 < lo < hi < fs / 2):
+        raise ValueError(f"Require 0 < lo < hi < fs/2, got lo={lo}, hi={hi}, fs={fs}")
+    if signal.size == 0:
+        raise ValueError("Signal array must not be empty")
     sos = butter(order, [lo, hi], btype='bandpass', fs=fs, output='sos')
     return sosfiltfilt(sos, signal)
 
@@ -152,6 +158,17 @@ def run_pipeline(
         time     : np.ndarray – time axis (s)
     """
     # Drift removal (PAPER.md §2.4)
+    if signal.size == 0:
+        raise ValueError("Signal array must not be empty")
+    M = kwargs.get("M", DEFAULT_MEMORY_SAMPLES)
+    alpha = kwargs.get("alpha", DEFAULT_ALPHA)
+    baseline_samples = kwargs.get("baseline_samples", DEFAULT_BASELINE_SAMP)
+    if M < 1:
+        raise ValueError(f"M must be at least 1, got M={M}")
+    if alpha <= 0:
+        raise ValueError(f"alpha must be positive, got alpha={alpha}")
+    if baseline_samples < 1:
+        raise ValueError(f"baseline_samples must be at least 1, got baseline_samples={baseline_samples}")
     x = sp_detrend(signal.astype(np.float64))
 
     # Bandpass filter (§2.4)

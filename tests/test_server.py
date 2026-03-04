@@ -39,14 +39,7 @@ def test_ping_returns_200(client):
 def test_ping_returns_pong(client):
     data = client.get("/ping").get_json()
     assert data["pong"] is True
-    assert "default_key_active" in data
-
-
-def test_ping_default_key_active_with_custom_key(client):
-    """When API_KEY env var is explicitly set, default_key_active must be False."""
-    # The test setUp sets API_KEY=test-api-key, so default_key_active is False.
-    data = client.get("/ping").get_json()
-    assert data["default_key_active"] is False
+    assert "default_key_active" not in data
 
 
 def test_ping_needs_no_auth(client):
@@ -88,6 +81,7 @@ def test_api_status_with_valid_jwt(client, auth_headers):
     assert rv.status_code == 200
     data = rv.get_json()
     assert data["status"] == "running"
+    assert data["default_key_active"] is False
 
 
 def test_api_logs_requires_jwt(client):

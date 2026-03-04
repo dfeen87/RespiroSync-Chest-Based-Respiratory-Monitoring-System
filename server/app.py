@@ -32,6 +32,7 @@ Scientific basis: PAPER.md §3–4 (phase–memory operator pipeline).
 """
 
 import csv
+import hmac
 import io
 import os
 import smtplib
@@ -122,6 +123,10 @@ _run_lock = threading.Lock()
 _last_metrics: dict = {}
 _validate_lock = threading.Lock()
 
+# ── Version ─────────────────────────────────────────────────────────────────────
+_version_file = Path(__file__).parent.parent / "VERSION"
+VERSION = _version_file.read_text().strip() if _version_file.exists() else "1.1.0"
+
 # ── JWT configuration ────────────────────────────────────────────────────────────
 # JWT_SECRET must be set to a strong random value in production.
 # API_KEY is the shared secret clients exchange for a bearer token.
@@ -130,6 +135,23 @@ _API_KEY: str = os.environ.get("API_KEY", "changeme")
 _USING_DEFAULT_KEY: bool = "API_KEY" not in os.environ
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_HOURS = 24
+
+# ── Production secret guard ──────────────────────────────────────────────────────
+_ENV = os.environ.get("RESPIROSYNC_ENV") or os.environ.get("FLASK_ENV", "")
+if _ENV == "production":
+    _default_jwt = "API_KEY" not in os.environ or _JWT_SECRET == "changeme-jwt-secret"
+    _default_api = "JWT_SECRET" not in os.environ or _API_KEY == "changeme"
+    if _default_jwt or _default_api:
+        logging.critical(
+            "FATAL: JWT_SECRET and API_KEY must be explicitly set in production. "
+            "Refusing to start with default secrets."
+        )
+        sys.exit(1)
+elif _USING_DEFAULT_KEY or _JWT_SECRET == "changeme-jwt-secret":
+    logging.warning(
+        "WARNING: Running with default API_KEY or JWT_SECRET. "
+        "Set these environment variables before deploying to production."
+    )
 
 
 def _make_token() -> str:
@@ -164,12 +186,8 @@ def require_jwt(f):
 
 @app.route("/ping")
 def ping() -> object:
-    """Unauthenticated keepalive endpoint for load-balancers and uptime monitors.
-
-    Also returns ``default_key_active`` so the dashboard can auto-connect when
-    no custom ``API_KEY`` environment variable has been configured.
-    """
-    return jsonify({"pong": True, "default_key_active": _USING_DEFAULT_KEY})
+    """Unauthenticated keepalive endpoint for load-balancers and uptime monitors."""
+    return jsonify({"pong": True})
 
 
 @app.route("/api/auth/token", methods=["POST"])
@@ -184,8 +202,8 @@ def api_auth_token() -> object:
     ---------------
     token : str  A signed JWT to use as ``Authorization: Bearer <token>``.
     """
-    body = request.get_json(force=True, silent=True) or {}
-    if body.get("key") != _API_KEY:
+    body = request.get_json(silent=True) or {}
+    if not hmac.compare_digest(body.get("key", ""), _API_KEY):
         logger.warning("Token request rejected — invalid API key")
         return jsonify({"error": "Invalid API key"}), 401
     token = _make_token()
@@ -204,10 +222,11 @@ def index() -> object:
 def api_status() -> object:
     """Return current system status."""
     return jsonify({
-        "status":    "running",
-        "version":   "1.0.0",
-        "uptime_s":  round(time.time() - _start_time, 1),
-        "pipeline":  "phase-memory operator (PAPER.md §3–4)",
+        "status":            "running",
+        "version":           VERSION,
+        "uptime_s":          round(time.time() - _start_time, 1),
+        "pipeline":          "phase-memory operator (PAPER.md §3–4)",
+        "default_key_active": _USING_DEFAULT_KEY,
     })
 
 
@@ -246,20 +265,30 @@ def api_set_config() -> object:
     baseline_samples : int
     fs               : float (sample rate Hz)
     """
-    data = request.get_json(force=True, silent=True) or {}
+    data = request.get_json(silent=True) or {}
     updated = {}
-    for key, cast in (
-        ("memory_samples",   int),
-        ("alpha",            float),
-        ("baseline_samples", int),
-        ("fs",               float),
-    ):
+
+    _BOUNDS: dict = {
+        "memory_samples":   (int,   10,  10000),
+        "alpha":            (float, 1.0, 10.0),
+        "baseline_samples": (int,   10,  10000),
+        "fs":               (float, 1.0, 1000.0),
+    }
+
+    for key, (cast, lo, hi) in _BOUNDS.items():
         if key in data:
             try:
-                _config[key] = cast(data[key])
-                updated[key] = _config[key]
+                value = cast(data[key])
             except (ValueError, TypeError) as exc:
                 logger.warning("Config update rejected for %s: %s", key, exc)
+                continue
+            if not (lo <= value <= hi):
+                return jsonify({
+                    "error": f"'{key}' must be between {lo} and {hi}, got {value}"
+                }), 400
+            _config[key] = value
+            updated[key] = value
+
     if updated:
         logger.info("Configuration updated: %s", updated)
     return jsonify({"status": "ok", "config": dict(_config)})
@@ -291,8 +320,9 @@ def api_run() -> object:
         return jsonify({"error": "A run is already in progress"}), 429
 
     try:
-        body = request.get_json(force=True, silent=True) or {}
+        body = request.get_json(silent=True) or {}
         duration_s = float(body.get("duration_s", 90))
+        duration_s = max(1.0, min(duration_s, 3600.0))
 
         logger.info(
             "Operator run started — duration=%.0fs  M=%d  α=%.2f  fs=%.0f Hz",
@@ -340,7 +370,7 @@ def api_run() -> object:
 
     except Exception as exc:  # pylint: disable=broad-except
         logger.error("Operator run failed: %s", exc, exc_info=True)
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
     finally:
         _run_lock.release()
@@ -506,7 +536,7 @@ def api_validate() -> object:
         return jsonify({"error": "A validation run is already in progress"}), 429
 
     try:
-        body = request.get_json(force=True, silent=True) or {}
+        body = request.get_json(silent=True) or {}
         n_records = int(body.get("n_records", 5))
         if n_records < 1 or n_records > 53:
             return jsonify({"error": "n_records must be between 1 and 53 (BIDMC dataset size)"}), 400
@@ -534,7 +564,7 @@ def api_validate() -> object:
 
     except Exception as exc:  # pylint: disable=broad-except
         logger.error("Validation run failed: %s", exc, exc_info=True)
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
     finally:
         _validate_lock.release()
@@ -618,7 +648,7 @@ def api_send_results() -> object:
       SMTP_PASS  (optional)
       SMTP_FROM  (default: respirosync@localhost)
     """
-    body = request.get_json(force=True, silent=True) or {}
+    body = request.get_json(silent=True) or {}
     recipient = (body.get("email") or "").strip()
     if not recipient or "@" not in recipient:
         return jsonify({"error": "A valid email address is required"}), 400
@@ -712,7 +742,7 @@ def api_send_results() -> object:
         return jsonify({"status": "ok", "sent_to": recipient})
     except Exception as exc:  # pylint: disable=broad-except
         logger.error("Email delivery failed: %s", exc)
-        return jsonify({"error": f"Email delivery failed: {exc}"}), 500
+        return jsonify({"error": "Email delivery failed"}), 500
 
 
 # ── Entry point ─────────────────────────────────────────────────────────────────

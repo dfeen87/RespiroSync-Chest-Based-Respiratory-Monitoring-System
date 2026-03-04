@@ -52,7 +52,7 @@ bool test_version() {
     const char* version = respiro_get_version();
     TEST_ASSERT(version != nullptr, "Version string is NULL");
     TEST_ASSERT(strlen(version) > 0, "Version string is empty");
-    TEST_ASSERT(strcmp(version, "1.0.0") == 0, "Version mismatch");
+    TEST_ASSERT(strcmp(version, "1.1.0") == 0, "Version mismatch");
     
     return true;
 }

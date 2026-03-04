@@ -28,3 +28,14 @@ jobs:
       - name: Build and run tests
         run: |
           make test
+
+  python-tests:
+    name: Python test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt -r validation/requirements.txt pytest
+      - run: pytest tests/ -v
