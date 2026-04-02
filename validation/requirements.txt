@@ -1,4 +1,8 @@
-numpy>=1.21
-scipy>=1.7
-matplotlib>=3.4
-wfdb>=4.0
+# Validation dependencies (PAPER.md §5 reproducibility)
+# Lower bounds ensure the signal-processing APIs used in pipeline.py,
+# metrics.py, and plots.py are available.  Pin upper bounds at the next
+# major version to prevent silent API breaks across NumPy/SciPy major releases.
+numpy>=1.21,<3
+scipy>=1.7,<2
+matplotlib>=3.4,<4
+wfdb>=4.0,<5
