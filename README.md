@@ -21,6 +21,42 @@
 
 ---
 
+## ⚡ Reproduce All Figures (Reviewer Quick-Start)
+
+> One command reproduces every figure and table in the paper — no internet, no
+> PhysioNet account required.
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring.git
+cd Smartphone-Based-Chest-Monitoring
+
+# 2. Reproduce everything (offline / synthetic mode — fully deterministic)
+bash reproduce_all.sh
+```
+
+| Output file | Paper reference |
+|-------------|----------------|
+| `validation/figures/regime1_stable.png` | PAPER.md §5.1 row 1 — stable control |
+| `validation/figures/regime2_drift.png` | PAPER.md §5.1 row 2 — frequency drift |
+| `validation/figures/regime3_pause.png` | PAPER.md §5.1 row 3 — breathing pause |
+| `validation/figures/comparison_baselines.png` | PAPER.md §5.2 — ΔΦ vs RMS vs FFT |
+| `results/metrics.csv` | PAPER.md §5.3 — per-record metrics |
+| `results/summary.csv` | PAPER.md Table 1 — mean ± SD |
+
+**Reproducibility guarantees:**
+- All randomness is seeded: synthetic signals use `seed=42` (single-record) and `seed=record_id` (multi-record).
+- The phase–memory pipeline (`validation/pipeline.py`) contains no RNG — it is fully deterministic.
+- Operator parameters: `fs=50 Hz`, `M=150`, `α=2.0`, bandpass `0.1–0.5 Hz` (PAPER.md §4.2).
+
+To run on real PhysioNet data instead, install `wfdb` and pass `--physionet`:
+```bash
+pip install wfdb
+bash reproduce_all.sh --physionet
+```
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)

@@ -189,12 +189,20 @@ def _causal_rolling_mean(x: np.ndarray, M: int) -> np.ndarray:
 
     Matches the C++ rolling-buffer implementation exactly:
       out[n] = mean(x[max(0, n-M+1) … n])
+
+    Vectorised via cumsum to avoid a Python-level loop, while producing
+    bit-for-bit identical results to the naive loop implementation.
     """
-    out = np.empty_like(x)
+    N = len(x)
     cumsum = np.cumsum(x)
-    for n in range(len(x)):
-        if n < M:
-            out[n] = cumsum[n] / (n + 1)
-        else:
-            out[n] = (cumsum[n] - cumsum[n - M]) / M
+    out = np.empty(N, dtype=np.float64)
+
+    # Expanding window for the first min(M, N) samples
+    m = min(M, N)
+    out[:m] = cumsum[:m] / np.arange(1, m + 1, dtype=np.float64)
+
+    # Full window of exactly M samples for the remainder
+    if N > M:
+        out[M:] = (cumsum[M:] - cumsum[:N - M]) / M
+
     return out

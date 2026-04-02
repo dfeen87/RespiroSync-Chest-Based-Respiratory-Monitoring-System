@@ -95,7 +95,7 @@ def plot_regime(
     ax2.legend(loc='upper right', fontsize=8)
     ax2.grid(True, alpha=0.3)
 
-    plt.savefig(outfile, dpi=150, bbox_inches='tight')
+    plt.savefig(outfile, dpi=300, bbox_inches='tight')
     plt.close(fig)
     return outfile
 
@@ -191,7 +191,7 @@ def plot_comparison(
     if outfile is None:
         outfile = str(_FIG_DIR / 'comparison_baselines.png')
 
-    fig, axes = plt.subplots(3, 1, figsize=(10, 8))
+    fig, axes = plt.subplots(3, 1, figsize=(10, 8), constrained_layout=True)
 
     def _vline(ax):
         if onset_time is not None:
@@ -233,7 +233,6 @@ def plot_comparison(
         'Method Comparison: Proposed ΔΦ(t) vs Baselines  (PAPER.md §5.2, Table 1)',
         fontsize=11, fontweight='bold',
     )
-    plt.tight_layout()
-    plt.savefig(outfile, dpi=150, bbox_inches='tight')
+    plt.savefig(outfile, dpi=300, bbox_inches='tight')
     plt.close(fig)
     return outfile

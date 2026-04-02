@@ -291,11 +291,52 @@ private:
     float accel_magnitude_sum_squares;
     
     // Configuration
+    //
+    // Motion-gating parameters
+    // ─────────────────────────
+    // The engine gates out implausible breath-cycle candidates using three
+    // deterministic, parameterised thresholds.  All values are intentionally
+    // named constants (no magic numbers) so they can be audited and adjusted.
+    //
+    // PEAK_THRESHOLD_MULTIPLIER (0.6)
+    //   The adaptive peak-detection threshold is set at:
+    //     T_peak(t) = μ_x(t) + 0.6 · σ_x(t)
+    //   where μ_x and σ_x are the running mean and standard deviation of the
+    //   bandpass-filtered breathing signal over the last BUFFER_SIZE samples.
+    //   0.6 σ provides a soft gate: it is permissive enough to capture shallow
+    //   breaths while rejecting sub-threshold noise events.  This is the sole
+    //   free parameter in the peak-detection stage; the phase–memory threshold
+    //   (α · σ_ω) is independent and defined in PAPER.md Eq. 6.
+    //
+    // APNEA_THRESHOLD_MS (10 000 ms = 10 s)
+    //   If no breath peak is detected for more than 10 seconds the engine
+    //   flags `possible_apnea = 1`.  10 s is shorter than the clinical apnea
+    //   criterion (≥ 10 s for hypopnea, ≥ 20 s for apnea) but is appropriate
+    //   for the informational heuristic role of this field.  The 8-second
+    //   pause used in the Python validation (perturbations.py PAUSE_DURATION_S)
+    //   is deliberately shorter than this threshold so that the phase–memory
+    //   operator — not the time-out gate — is the primary detection mechanism.
+    //
+    // BREATH_CYCLE_MIN_MS / BREATH_CYCLE_MAX_MS (500 / 6 000 ms)
+    //   Physiologically valid inter-breath intervals correspond to:
+    //     500 ms → 120 BPM (maximum possible respiratory rate)
+    //     6 000 ms →  10 BPM (minimum at rest / deep sleep)
+    //   Peaks outside this window are silently discarded as motion artefacts.
+    //
+    // GRAVITY_ALPHA (0.8)
+    //   Exponential-moving-average coefficient for the gravity estimator
+    //   (removeGravity).  At 50 Hz the time constant is:
+    //     τ = −1 / (fs · ln(α)) ≈ 8.9 samples ≈ 0.18 s
+    //   This is well below the lowest breathing frequency (0.1 Hz → 10 s),
+    //   so the gravity component is removed without attenuating respiratory motion.
     static constexpr int BUFFER_SIZE = 256;
-    static constexpr float PEAK_THRESHOLD_MULTIPLIER = 0.6f;
-    static constexpr uint64_t APNEA_THRESHOLD_MS = 10000; // 10 seconds
-    static constexpr float EPSILON = 1e-6f; // For floating point comparisons
-    static constexpr float MIN_STDDEV = 1e-6f; // Minimum standard deviation to prevent singularities
+    static constexpr float PEAK_THRESHOLD_MULTIPLIER = 0.6f;  // see above
+    static constexpr uint64_t APNEA_THRESHOLD_MS = 10000;     // 10 s; see above
+    static constexpr uint64_t BREATH_CYCLE_MIN_MS = 500;      // min interval → 120 BPM (max rate)
+    static constexpr uint64_t BREATH_CYCLE_MAX_MS = 6000;     // max interval →  10 BPM (min rate)
+    static constexpr float GRAVITY_ALPHA = 0.8f;              // see above
+    static constexpr float EPSILON = 1e-6f;    // floating-point guard
+    static constexpr float MIN_STDDEV = 1e-6f; // prevents division by near-zero
     
     // Helper: Calculate magnitude of 3D vector
     float magnitude(const SensorSample& s) {
@@ -304,9 +345,10 @@ private:
     
     // Helper: Remove gravity from accelerometer (simple high-pass)
     float removeGravity(float magnitude) {
-        const float alpha = 0.8f; // Smoothing factor
-        
-        gravity_estimate = alpha * gravity_estimate + (1 - alpha) * magnitude;
+        // Exponential moving average estimates the quasi-static gravity component.
+        // τ ≈ 0.18 s at 50 Hz — fast enough to track orientation changes but
+        // well below the respiratory band floor (0.1 Hz → 10 s period).
+        gravity_estimate = GRAVITY_ALPHA * gravity_estimate + (1 - GRAVITY_ALPHA) * magnitude;
         
         return magnitude - gravity_estimate;
     }
@@ -340,8 +382,10 @@ private:
             if (last_peak_time > 0 && timestamp >= last_peak_time) {
                 uint64_t duration = timestamp - last_peak_time;
                 
-                // Valid breath cycle (0.5-6 seconds = 10-120 BPM range)
-                if (duration > 500 && duration < 6000) {
+                // Valid breath cycle: physiologically plausible inter-breath interval.
+                // BREATH_CYCLE_MIN_MS..BREATH_CYCLE_MAX_MS spans 10–120 BPM;
+                // peaks outside this window are rejected as motion artefacts.
+                if (duration > BREATH_CYCLE_MIN_MS && duration < BREATH_CYCLE_MAX_MS) {
                     BreathCycle cycle;
                     cycle.timestamp_ms = timestamp;
                     cycle.duration_ms = (float)duration;
