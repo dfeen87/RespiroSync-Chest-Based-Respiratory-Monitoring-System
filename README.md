@@ -59,6 +59,7 @@ bash reproduce_all.sh --physionet
 
 ## 📋 Table of Contents
 
+- [Repository Structure](#️-repository-structure)
 - [Overview](#overview)
 - [Pipeline Overview](#pipeline-overview)
 - [Phase–Memory Operator](#phasememory-operator)
@@ -79,6 +80,76 @@ bash reproduce_all.sh --physionet
 - [Citation](#citation)
 - [Acknowledgements](#acknowledgments)
 - [License](#license)
+
+---
+
+## 🗂️ Repository Structure
+
+```
+Smartphone-Based-Chest-Monitoring/
+├── core/                          # Cross-platform C++ engine
+│   ├── respirosync_core.cpp       # Phase–memory operator implementation
+│   └── respirosync_core.h         # Public C/C++ API header
+│
+├── android/                       # Android integration
+│   ├── app/src/main/java/com/respirosync/demo/
+│   │   └── MainActivity.kt        # Android demo application
+│   ├── engine/
+│   │   └── RespiroSyncEngine.kt   # Kotlin engine wrapper
+│   └── jni/
+│       └── respirosync_android.cpp # JNI bridge to core
+│
+├── ios/                           # iOS integration
+│   ├── RespiroSyncDemo/
+│   │   └── ContentView.swiftContentView.swift  # SwiftUI demo app
+│   └── bridge/
+│       └── respirosync_ios.mm     # Objective-C++ bridge to core
+│
+├── server/                        # Python web server & dashboard
+│   ├── app.py                     # Flask/web server entry point
+│   ├── static/
+│   │   └── index.html             # Live monitoring dashboard UI
+│   └── __init__.py
+│
+├── validation/                    # Validation & reproducibility pipeline
+│   ├── pipeline.py                # Core validation pipeline (deterministic)
+│   ├── validate_bidmc.py          # Single-record BIDMC validation
+│   ├── multi_record_validation.py # Multi-record batch validation
+│   ├── physionet_loader.py        # PhysioNet / BIDMC data loader
+│   ├── metrics.py                 # Statistical metrics (MAE, RMSE, etc.)
+│   ├── perturbations.py           # Signal perturbation utilities
+│   ├── plots.py                   # Figure generation
+│   ├── requirements.txt           # Validation-specific Python deps
+│   └── __init__.py
+│
+├── tests/                         # Automated tests
+│   ├── test_core.cpp              # C++ unit tests for the core engine
+│   └── test_server.py             # Python tests for the web server
+│
+├── docs/                          # Extended documentation
+│   ├── ARCHITECTURE.md            # System architecture details
+│   ├── BUILDING.md                # Build instructions
+│   ├── CHANGELOG.md               # Version history
+│   ├── PLATFORMS.md               # Platform support notes
+│   ├── PRODUCTION_IMPROVEMENTS.md # Roadmap for production use
+│   ├── QUICKSTART.md              # Quick-start guide
+│   ├── SECURITY.md                # Security considerations
+│   ├── SIGNALS.md                 # Signal processing reference
+│   └── VALIDATION.md              # Validation protocol details
+│
+├── results/                       # Output directory for validation results
+│   └── .gitkeep
+│
+├── PAPER.md                       # Full scientific paper (canonical reference)
+├── RESULT_ANALYSIS.md             # Analysis of validation results
+├── reproduce_all.sh               # One-command reproducibility script
+├── Makefile                       # Build targets (core, tests, clean)
+├── requirements.txt               # Top-level Python dependencies
+├── render.yaml                    # Render.com deployment configuration
+├── CITATION.cff                   # Citation metadata
+├── LICENSE                        # MIT License
+└── README.md                      # This file
+```
 
 ---
 
