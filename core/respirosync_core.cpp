@@ -332,8 +332,8 @@ private:
     static constexpr int BUFFER_SIZE = 256;
     static constexpr float PEAK_THRESHOLD_MULTIPLIER = 0.6f;  // see above
     static constexpr uint64_t APNEA_THRESHOLD_MS = 10000;     // 10 s; see above
-    static constexpr uint64_t BREATH_CYCLE_MIN_MS = 500;      // ≥ 10 BPM
-    static constexpr uint64_t BREATH_CYCLE_MAX_MS = 6000;     // ≤ 120 BPM
+    static constexpr uint64_t BREATH_CYCLE_MIN_MS = 500;      // min interval → 120 BPM (max rate)
+    static constexpr uint64_t BREATH_CYCLE_MAX_MS = 6000;     // max interval →  10 BPM (min rate)
     static constexpr float GRAVITY_ALPHA = 0.8f;              // see above
     static constexpr float EPSILON = 1e-6f;    // floating-point guard
     static constexpr float MIN_STDDEV = 1e-6f; // prevents division by near-zero

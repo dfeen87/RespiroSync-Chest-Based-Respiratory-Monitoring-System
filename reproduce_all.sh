@@ -58,7 +58,7 @@ done
 echo "========================================================================"
 echo " RespiroSync — reproduce_all.sh"
 echo " Repository: ${REPO_ROOT}"
-echo " Mode: $([ -n "${SYNTHETIC_FLAG}" ] && echo 'offline (synthetic)' || echo 'online (PhysioNet)')"
+echo " Mode: $([ -n "${SYNTHETIC_FLAG}" ] && echo "offline (synthetic)" || echo "online (PhysioNet)")"
 echo "========================================================================"
 
 # ── Step 0: Install Python dependencies ──────────────────────────────────────
