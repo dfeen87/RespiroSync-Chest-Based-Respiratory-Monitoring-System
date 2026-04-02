@@ -1,46 +1,74 @@
-# A Deterministic Phase–Memory Operator for Early Detection of Respiratory Instability Using Smartphone-Based Chest IMU Monitoring
+# A Proof-of-Concept Deterministic Phase–Memory Operator for Respiratory Instability Detection Using Chest-Mounted Smartphone IMU Signals
 
-**Smart Wearable Technology (SWT) — Research Article**
+**Marcel Krüger¹ · Don Michael Feeney Jr.²**
 
-| | |
-|---|---|
-| **Authors** | Marcel Krüger¹·*, Don Michael Feeney Jr.² |
-| **Affiliations** | ¹ Independent Researcher, Germany · ² Independent Researcher, USA |
-| **Correspondence** | marcelkrueger092@gmail.com , dfeen87@gmail.com|
-| **ORCID (M.K.)** | 0009-0002-5709-9729 |
-| **ORCID (D.M.F.)** | 0009-0003-1350-4160 |
-| **DOI** | *(assigned by journal)* |
+¹ Independent Researcher, Germany · ² Independent Researcher, USA
+
+📧 marcelkrueger092@gmail.com · dfeen87@gmail.com  
+🔗 ORCID (M.K.): [0009-0002-5709-9729](https://orcid.org/0009-0002-5709-9729) · ORCID (D.M.F.): [0009-0003-1350-4160](https://orcid.org/0009-0003-1350-4160)
+
+> **Published in:** *Smart Wearable Technology (SWT)* · DOI: *(assigned by journal)*
 
 ---
 
 ## Abstract
 
-Wearable respiratory monitoring often relies on heuristic pipelines or opaque machine-learning models, limiting interpretability and auditability in safety-critical or clinical-adjacent contexts. We introduce a **deterministic phase–memory operator** for early detection of respiratory instability using chest-mounted smartphone inertial measurement unit (IMU) signals. The proposed instability metric **ΔΦ(t)** quantifies instantaneous deviations of phase velocity from short-term phase memory, enabling transparent threshold-based decision logic without training dependence. A controlled validation protocol covering frequency drift, intermittent pauses, and burst irregularities is defined and benchmarked against RMS-envelope and FFT-peak tracking baselines. The framework is linear-time, streaming-capable, reproducible via a public reference implementation, and suitable for real-time on-device deployment in wearable respiratory monitoring scenarios.
+Wearable respiratory monitoring often relies on heuristic pipelines or opaque machine-learning models, which can limit interpretability and auditability in safety-sensitive or clinical-adjacent contexts. Here, we present a proof-of-concept **deterministic phase–memory operator** for respiratory instability detection using chest-mounted smartphone inertial measurement unit (IMU) signals. The proposed instability metric **ΔΦ(t)** quantifies deviations of instantaneous phase velocity from short-term phase memory, enabling transparent threshold-based decision logic without training dependence.
 
-**Keywords:** wearable respiratory monitoring; smartphone IMU sensing; deterministic signal processing; phase-based instability detection; interpretable health monitoring
+A controlled validation protocol based on **N = 5** publicly available BIDMC respiratory recordings with semi-synthetic perturbations was used to examine representative deviation regimes, including frequency drift, intermittent pauses, and burst irregularities. Performance was compared against low-overhead baseline methods based on RMS-envelope and FFT-peak tracking. Within this limited proof-of-concept setting, the framework showed reproducible responses to structured perturbations and remained compatible with linear-time, streaming-capable implementation.
+
+> ⚠️ **Scope Notice:** The present study should be interpreted as a *methodological investigation* of interpretable chest-based IMU respiratory instability sensing rather than as a clinical validation study. Further work is required to evaluate physiological specificity, robustness across heterogeneous cohorts, adaptive baseline strategies, and performance under broader real-world motion conditions.
+
+**Keywords:** wearable respiratory monitoring · chest-mounted IMU sensing · deterministic signal processing · proof-of-concept study · phase-based instability detection · interpretable health monitoring
+
+---
+
+## Table of Contents
+
+1. [Introduction](#1-introduction)
+2. [Signal Acquisition and Preprocessing](#2-signal-acquisition-and-preprocessing)
+3. [Phase–Memory Operator](#3-phasememory-operator)
+4. [Instability Metric and Decision Logic](#4-instability-metric-and-decision-logic)
+5. [Experimental Protocol](#5-experimental-protocol)
+6. [Results](#6-results)
+7. [Wearable Feasibility and Implementation](#7-wearable-feasibility-and-implementation)
+8. [Reproducible Implementation and Validation Repository](#8-reproducible-implementation-and-validation-repository)
+9. [Discussion](#9-discussion)
+10. [Potential Future Directions](#10-potential-future-directions)
+11. [Conclusion](#11-conclusion)
+- [Ethics Statement](#ethics-statement)
+- [Data Availability](#data-availability-statement)
+- [References](#references)
+- [Appendix A — REST API](#appendix-a-reproducibility-layer-minimal-rest-api)
 
 ---
 
 ## 1  Introduction
 
-Wearable respiratory monitoring has become increasingly relevant for sleep assessment, early warning of respiratory compromise, and longitudinal remote observation. Despite rapid technological progress, many existing systems remain constrained by:
+Wearable respiratory monitoring has become increasingly important for sleep-related observation, longitudinal remote monitoring, and the detection of changes in breathing dynamics outside episodic clinical encounters. Remote digital health technologies are now recognized as a relevant component of modern respiratory care, supporting continuous physiological observation and personalized management strategies [21]. Recent reviews document the rapid expansion of wearable and remote respiratory monitoring technologies across both clinical and ambulatory settings [7, 10, 14, 15, 17, 20].
 
-1. Weak mechanical coupling to respiration (e.g., wrist-based placement)
-2. Indirect proxy measurements with limited physiological specificity
-3. Black-box machine-learning pipelines whose internal decision mechanisms are difficult to audit, reproduce, and clinically interpret
+A broad spectrum of respiratory rate (RR) estimation algorithms has been developed using biosignals such as electrocardiography (ECG) and photoplethysmography (PPG), as systematically reviewed in [5]. In parallel, contact-based sensing approaches that directly capture chest wall motion have been investigated using belts, strain sensors, accelerometers, and inertial measurement units (IMUs) [6]. More recently, smartphone-based IMU systems have been explored for respiratory kinematics monitoring, remote health assessment, and comparison against reference instrumentation [8, 9, 22].
 
-For wearable systems operating in clinical-adjacent or safety-sensitive contexts, deterministic and interpretable signal-processing frameworks are desirable. Transparent decision logic enables reproducibility, parameter auditability, and predictable deployment under resource constraints.
+Beyond inertial and mechanical sensing, alternative wearable technologies such as fiber-optic systems [12] and humidity-based flexible sensor platforms with wireless smartphone integration [16] have further broadened the technological landscape.
 
-This manuscript proposes a deterministic alternative: a **phase–memory operator** applied to chest-mounted smartphone IMU signals. Rather than relying on learned classification boundaries, the proposed method defines respiratory instability as a measurable divergence between instantaneous phase velocity and short-term phase memory.
+Despite this rapid progress, several practical and methodological limitations remain. Many wearable systems exhibit weak mechanical coupling to respiratory motion, rely on indirect physiological proxies with limited specificity, or employ data-driven machine-learning pipelines for respiratory rate estimation [13]. In such approaches, internal decision logic may be difficult to audit, reproduce, and clinically interpret. Systematic analyses have therefore emphasized the importance of explainability in wearable data analytics, highlighting risks associated with opaque model behavior and limited transparency [19]. Likewise, recent work on wearable sensor-based human activity recognition has investigated trade-offs between performance, computational complexity, and interpretability in neural architectures, underscoring the need for transparent modeling strategies in wearable systems [23].
 
-**Design goals:**
+Beyond signal acquisition alone, structured and reproducible pathways from wearable sensor data to clinically meaningful digital biomarkers have been identified as critical for digital health translation [18]. Such frameworks stress transparent signal modeling, rigorous validation, and interpretable transformation from raw measurements to actionable physiological indicators.
 
-| Goal | Description |
+For wearable systems operating in safety-sensitive or clinical-adjacent contexts, **deterministic and interpretable signal-processing frameworks are therefore desirable.** Transparent decision rules enable parameter auditability, reproducibility, and predictable deployment under computational and energy constraints, which are essential for real-time wearable implementations. Recent systematic reviews on low-power wearable device development likewise emphasize the importance of efficient signal acquisition and computationally lightweight processing pipelines for continuous vital-parameter monitoring [24].
+
+In this context, the present work investigates a deterministic alternative: a **phase–memory operator** applied to chest-mounted smartphone IMU signals. The underlying instability functional and operator formalism were previously introduced in a platform-agnostic framework for wearable physiological regime detection [25]. Rather than relying on learned classification boundaries, the proposed approach defines respiratory instability as a measurable divergence between instantaneous phase velocity and short-term phase memory. Whereas much prior work focuses primarily on respiratory rate estimation, the present study shifts the emphasis toward **phase-based instability detection**, with the goal of capturing transient deviations beyond average rate metrics.
+
+> **Scope:** The present manuscript should be read as a proof-of-concept methodological study rather than as a clinical validation paper. The analysis is based on a limited set of publicly available BIDMC respiratory recordings combined with controlled semi-synthetic perturbations.
+
+The design objectives of the proposed framework are:
+
+| Objective | Description |
 |---|---|
-| **Determinism** | Fully specified computation without training-time randomness or data-dependent model fitting |
-| **Interpretability** | Instability quantified explicitly as phase-memory divergence |
-| **Wearable feasibility** | Linear-time processing suitable for real-time on-device deployment |
-| **Protocol clarity** | Controlled validation regimes with transparent baseline comparisons |
+| **Determinism** | Fully specified computation without training-time randomness or data-dependent parameter fitting |
+| **Interpretability** | Explicit quantification of instability as phase–memory divergence |
+| **Wearable feasibility** | Linear-time processing suitable for streaming and on-device implementation |
+| **Protocol transparency** | Controlled validation regimes with clearly defined baseline comparisons |
 
 ---
 
@@ -51,45 +79,41 @@ This manuscript proposes a deterministic alternative: a **phase–memory operato
 A smartphone is positioned on the **anterior thoracic wall (sternal region)** using a strap or compression garment. Chest placement provides direct mechanical coupling to respiratory motion compared to distal placements (e.g., wrist), improving signal-to-noise in the respiration band.
 
 ```
-          ┌──────────────────────────────┐
-          │        ANTERIOR VIEW         │
-          │                              │
-          │          ┌──────┐            │
-          │          │ 📱   │  ← Smartphone strapped
-          │          │ IMU  │     to sternal region
-          │          └──────┘            │
-          │       /           \          │
-          │      /   THORAX    \         │
-          │     /   (sternum)   \        │
-          │    └─────────────────┘       │
-          │                              │
-          │  ↕ Direct coupling to        │
-          │    respiratory motion        │
-          └──────────────────────────────┘
+         ╔══════════╗
+         ║ STERNAL  ║  ← Smartphone placement
+         ║  REGION  ║     (anterior thoracic wall)
+         ╚══════════╝
+        /            \
+       /   Thorax     \
+      /                \
+     ────────────────────
 ```
 
 ### 2.2  Sampling and Channels
 
-Assume inertial sampling at **fₛ ∈ [50, 100] Hz**. Let:
+Assume inertial sampling at **fₛ ∈ [50, 100] Hz**.
 
-- **a(t) ∈ ℝ³** — accelerometer signal
-- **Ω(t) ∈ ℝ³** — gyroscope signal
+Let:
+- **a(t) ∈ ℝ³** — accelerometer signals
+- **Ω(t) ∈ ℝ³** — gyroscope signals
 
 ### 2.3  Respiration-Sensitive Scalar Channel
 
-We form a scalar respiration channel **x(t)** via projection onto a gravity-aligned axis:
+We form a scalar respiration channel x(t) via projection onto a gravity-aligned axis:
 
-> **x(t) = a(t) · û_b(t)**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 1)*
+$$x(t) = \mathbf{a}(t) \cdot \hat{u}_b(t)$$
+
+> **x(t) = a(t) · û_b(t)**  &emsp; *(Eq. 1)*
 
 where **û_b(t)** is a unit vector estimated from sensor fusion (gravity direction) or a stable principal axis.
 
 ### 2.4  Filtering and Normalization
 
-| Step | Operation |
+| Step | Description |
 |---|---|
 | Drift removal | High-pass filter or detrend |
-| Bandpass | 0.1–0.5 Hz at rest (extend for exercise) |
-| Motion rejection | Gating via ‖**Ω(t)**‖ or broadband energy |
+| Bandpass | 0.1–0.5 Hz at rest; extend for exercise |
+| Motion rejection | Optional gating using ‖Ω(t)‖ or broadband energy |
 | Normalization | z-score on a baseline window |
 
 ---
@@ -98,23 +122,31 @@ where **û_b(t)** is a unit vector estimated from sensor fusion (gravity directi
 
 ### 3.1  Analytic Signal and Instantaneous Phase
 
-Let **x(t)** be the filtered channel. Define the analytic signal using the Hilbert transform 𝓗:
+Let **x(t)** denote the band-limited, filtered respiratory channel. We construct the analytic signal using the Hilbert transform 𝓗:
 
-> **z(t) = x(t) + i 𝓗[x(t)] = A(t) e^{iθ(t)}**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 2)*
+> **z(t) = x(t) + i 𝓗[x(t)] = A(t) e^{iθ(t)}**  &emsp; *(Eq. 2)*
 
-The instantaneous phase is **θ(t) = arg(z(t))**.
+where:
+- **A(t) = |z(t)|** — instantaneous amplitude
+- **θ(t) = arg(z(t))** — instantaneous phase
+
+The associated instantaneous angular frequency is:
+
+> **ω(t) = dθ(t)/dt**  &emsp; *(Eq. 3)*
+
+following the classical analytic-signal formalism [1, 2].
 
 ### 3.2  Instantaneous Phase Velocity
 
 Define phase velocity (implemented via discrete derivative with phase unwrapping):
 
-> **ω(t) = dθ/dt**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 3)*
+> **ω(t) = dθ/dt**  &emsp; *(Eq. 4)*
 
 ### 3.3  Short-Term Phase Memory
 
-For a memory window **T_m**, define:
+For a memory window **Tₘ**, define:
 
-> **ω̄(t) = (1/T_m) ∫_{t−T_m}^{t} ω(τ) dτ**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 4)*
+> **ω̄(t) = (1/Tₘ) ∫_{t−Tₘ}^{t} ω(τ) dτ**  &emsp; *(Eq. 5)*
 
 In discrete time with **M** samples:
 
@@ -128,63 +160,69 @@ In discrete time with **M** samples:
 
 We define the **phase–memory divergence**:
 
-> **ΔΦ(t) = |ω(t) − ω̄(t)|**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 5)*
+> **ΔΦ(t) = |ω(t) − ω̄(t)|**  &emsp; *(Eq. 6)*
 
-> 💡 **Interpretation:** Stable periodic breathing yields small ΔΦ; drift, pauses, or burst irregularity increase ΔΦ via rapid phase-velocity deviations.
+**Interpretation:**
+- 🟢 Stable periodic breathing → small ΔΦ
+- 🔴 Drift, pause-like suppression, or burst irregularity → large ΔΦ (rapid deviations of instantaneous phase velocity from short-term memory)
 
 ### 4.2  Baseline-Normalized Threshold
 
-Let **σ_ω** be the baseline standard deviation of **ω(t)** on an initial stable segment. Define:
+Let **σ_ω** denote the baseline standard deviation of ω(t) estimated on an initial stable segment. We define:
 
-> **Instability at time t  ⟺  ΔΦ(t) > α · σ_ω**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 6)*
+> **Instability at time t  ⟺  ΔΦ(t) > α · σ_ω**  &emsp; *(Eq. 7)*
 
 with **α ∈ [2, 3]** as a transparent sensitivity parameter.
 
 ### 4.3  Optional Persistence Criterion
 
-To reduce single-sample false positives, require persistence over **L** samples:
+To reduce single-sample false positives, we optionally require persistence over **L** samples:
 
-> **Σ_{k=0}^{L−1} 𝟙{ΔΦ(t − k) > α·σ_ω} ≥ L**  &nbsp;&nbsp;&nbsp;&nbsp; *(Eq. 7)*
+> **Σ_{k=0}^{L−1} 𝟙{ΔΦ(t−k) > α·σ_ω} ≥ L**  &emsp; *(Eq. 8)*
 
 ### 4.4  Implementation Parameters and Temporal Resolution
 
-| Parameter | Value |
-|---|---|
-| Sampling rate fₛ | 50 Hz (BIDMC respiratory recordings) |
-| Phase velocity ω(t) | Discrete differentiation of unwrapped analytic phase |
-| Memory window T_m | **5 s** → M = 250 samples at fₛ = 50 Hz (causal rolling average) |
-| Threshold multiplier α | 2 |
-| Detection latency resolution | Δt = 1/fₛ |
-| Perturbation onset | t = 30 s |
+| Parameter | Value | Notes |
+|---|---|---|
+| Sampling rate fₛ | 50 Hz | BIDMC recordings |
+| Memory window Tₘ | 5 s (M = 250 samples) | Spans multiple respiratory cycles |
+| Threshold factor α | ∈ [2, 3] | Fixed across all recordings |
+| Detection resolution Δt | 20 ms (= 1/fₛ) | Relative to perturbation onset t = 30 s |
 
-No additional smoothing beyond the specified memory window was applied unless explicitly stated.
+> These parameter settings were selected to support transparent and reproducible controlled evaluation rather than dataset-specific performance maximization. A full sensitivity analysis over (Tₘ, α, L) remains an important topic for future work.
 
 ---
 
 ## 5  Experimental Protocol
 
+> ⚠️ This study is designed as a **controlled proof-of-concept evaluation**, not a clinical validation study. Validation was performed on N = 5 publicly available BIDMC respiratory recordings with controlled semi-synthetic perturbations.
+
 ### 5.1  Controlled Regimes
 
-| Regime | Description |
-|---|---|
-| 1. Regular breathing (control) | Stationary frequency and amplitude |
-| 2. Frequency drift | Gradual change in respiration rate |
-| 3. Intermittent pause | Reduced amplitude / near-zero segments |
-| 4. Burst irregularity | Transient fast breathing or erratic phase resets |
+| Regime | Description | Clinical Analogue |
+|---|---|---|
+| **Regular breathing (control)** | Stationary segment; no perturbation | Baseline / false-alarm analysis |
+| **Frequency drift** | Gradual increase or decrease in effective respiratory frequency | Progressive rate deviation |
+| **Intermittent pause** | Transient amplitude suppression or near-zero signal segments | Pause-like respiratory interruption |
+| **Burst irregularity** | Transient fast-breathing bursts or erratic phase-reset-like deviations | Abrupt irregular respiratory destabilization |
+
+> Perturbations are **semi-synthetic**: applied to real BIDMC-derived respiratory traces rather than generated from a fully synthetic signal model.
 
 ### 5.2  Baseline Methods
 
-| Method | Description |
-|---|---|
-| **RMS envelope** | Windowed RMS amplitude proxy |
-| **FFT peak shift** | Tracking spectral peak in respiration band |
-| **Peak-to-peak intervals** | Time-domain period estimator *(optional)* |
+| Method | Sensitivity | Notes |
+|---|---|---|
+| **RMS envelope** | Amplitude suppression / gross envelope changes | Windowed RMS amplitude proxy |
+| **FFT peak shift** | Rate or spectral drift | Welch-averaged periodogram [4] |
+| **Peak-to-peak intervals** | Cycle-to-cycle timing variation | Simple time-domain period estimator |
 
 ### 5.3  Primary Outcomes
 
-- **Detection latency** — onset-to-alarm time
-- **False alarms** — alarm rate in control regime
-- **Compute cost** — runtime complexity and device-level CPU/energy estimates
+| Outcome | Description |
+|---|---|
+| **Detection latency** | Onset-to-alarm time relative to predefined perturbation onset |
+| **False alarms** | Alarm occurrence within stable control regime |
+| **Compute cost** | Runtime complexity and device-relevant computational footprint |
 
 ---
 
@@ -192,68 +230,56 @@ No additional smoothing beyond the specified memory window was applied unless ex
 
 ### 6.1  Regime Visualization
 
-The figure below shows representative behavior of ΔΦ(t) across controlled regimes. The metric remains low under stable conditions and increases during structured deviations.
+The figure below shows a representative controlled example of ΔΦ(t) across three regimes. The metric remains low during the stable segment and increases under structured deviations, particularly for frequency drift and pause-like perturbations.
 
 ```
-ΔΦ(t)
-  6 │                      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-    │                    ░░                                      ░░
-  5 │                  ░░                                          ░░
-    │                ░░         ╔═══════════════════════════════════╗
-  4 │──────────────────────────────────────────────────────────  ← THRESHOLD
-    │              ░░           │      PAUSE regime                 │
-  3 │            ░░             ╚═══════════════════════════════════╝
-    │          ░░
-  2 │   STABLE ░░  DRIFT ░░░░░░░░░░░░░░░░░░░░░░░░
-    │░░░░░░░░░░    ░░░░░░
-  1 │░░░░░░░░░░░░░░
-    │
-  0 └──┬─────────┬──────────┬──────────┬──────────┬──────────┬──▶ t (s)
-       0        15         30         45         60         75    90
-
-       ◀── STABLE ──▶◀──── DRIFT ────▶◀────── PAUSE ──────▶
-
-  - - - - - - - - - THRESHOLD (α·σ_ω) - - - - - - - - - - - - -
+  ΔΦ(t)
+  │
+6 │                              ╭─────╮        ╭──────╮
+  │                             ╱       ╲      ╱        ╲
+4 │                            ╱         ╲    ╱          ╲
+  │- - - - - - - - - - - - - -╱- - - - - -╲--╱- THRESHOLD-╲- - -
+2 │                           ╱             ╲╱              ╲
+  │▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔                               ▔▔▔
+0 │◄──── STABLE ────►◄────── DRIFT ────────►◄──── PAUSE ────►
+  └───────────────────────────────────────────────────────────→
+  0    10    20    30    40    50    60    70    80    90   t (s)
 ```
 
-*Figure 1: Evolution of ΔΦ(t) across controlled regimes. The dashed line denotes the statistically derived detection threshold.*
+*Representative proof-of-concept evolution of ΔΦ(t) across controlled regimes. The dashed line denotes the detection threshold used in the present controlled evaluation.*
 
 ### 6.2  Quantitative Comparison
 
-Detection latency was measured as the time from perturbation onset to first threshold crossing. False alarm rate was assessed in the stable control regime.
-
-**Table 1: Detection latency under controlled perturbations (mean ± SD, seconds)**
-*N = 5 BIDMC recordings. Perturbation onset at t = 30 s.*
+**Table 1 — Detection latency under controlled perturbations (mean ± SD, seconds) across N = 5 BIDMC recordings.** Latency is defined as the first threshold crossing relative to perturbation onset (t = 30 s).
 
 | Regime | RMS Envelope | FFT Peak Shift | **ΔΦ (proposed)** |
-|---|:---:|:---:|:---:|
-| Frequency drift | Not detected | 0.060 ± 0.000 s | **0.000 ± 0.000 s** ✓ |
-| Pause (amplitude suppression) | **0.000 ± 0.000 s** ✓ | Not detected | 0.572 ± 0.027 s |
-| Control (false alarms) | 0 | 0 | **0** ✓ |
+|---|---|---|---|
+| Frequency drift | ✗ Not detected | 0.060 ± 0.000 s | **0.000 ± 0.000 s** |
+| Pause (amplitude suppression) | **0.000 ± 0.000 s** | ✗ Not detected | 0.572 ± 0.027 s |
+| Control (false alarms) | 0 | 0 | **0** |
 
-> *"Not detected" indicates no threshold crossing within the **10 s post-onset evaluation window**.*
+> "Not detected" indicates no threshold crossing within the 10 s post-onset evaluation window.
 
 **Key findings:**
+- For **frequency drift**: ΔΦ detected at the first sampled post-onset instant (0.000 s); FFT required 0.060 s; RMS failed to trigger.
+- For **amplitude suppression**: RMS triggered immediately (0.000 s); ΔΦ showed a mean latency of 0.572 s; FFT failed to trigger.
+- **Zero false alarms** observed in the stable control segment across all methods.
 
-- The proposed ΔΦ operator detected **frequency drift immediately** at perturbation onset (latency = 0.000 ± 0.000 s), outperforming FFT peak-shift (0.060 s) and RMS envelope (not detected).
-- For **amplitude-suppression (pause)** events, RMS envelope responded immediately while ΔΦ exhibited a mean latency of 0.572 ± 0.027 s; FFT peak-shift did not trigger.
-- **No false alarms** were observed in the stable control segment for any method.
+> ⚠️ These results should be interpreted as controlled timing comparisons under semi-synthetic perturbations, **not** as estimates of clinical sensitivity, specificity, or diagnostic performance.
 
 ### 6.3  Motion Robustness Stress Test
 
-Walking and posture-change segments were introduced into the validation recordings to assess robustness against motion artifacts. A gyroscope-based motion gating mechanism was applied, suppressing samples exceeding a broadband angular-velocity threshold prior to instability evaluation.
+Walking and posture-change segments were introduced as representative non-respiratory disturbance conditions, with a **gyroscope-based motion-gating** mechanism applied prior to instability evaluation.
 
-Across N = 5 recordings, a total of **12 motion segments** (mean duration: **8.3 ± 2.1 s**) were analyzed. Detection performance was evaluated within a 10 s post-onset window using the same threshold definition (α = 2, fₓ = 50 Hz) as in Section 4.4.
-
-| Metric | Result |
+| Metric | Value |
 |---|---|
-| False-alarm rate during gated motion | **0.0%** across all evaluated windows |
-| Max transient ΔΦ excursion | < **0.81 α·σ_ω** (below threshold) |
-| Single-sample crossings without gating | 2 / 12 segments — did not satisfy persistence criterion |
+| Motion segments analyzed | 12 (across N = 5 recordings) |
+| Mean segment duration | 8.3 ± 2.1 s |
+| False-alarm rate (with gating) | **0.0%** |
+| Max transient ΔΦ excursion | < 0.81 α·σ_ω |
+| Isolated crossings (without gating) | 2/12 segments (did not satisfy persistence criterion) |
 
-Transient ΔΦ excursions remained below 0.81 ασ_ω (maximal observed peak), indicating that persistence filtering and multi-axis fusion effectively suppressed short broadband disturbances. Without gyroscope-based gating, isolated single-sample threshold crossings appeared in 2/12 segments but did not satisfy the persistence criterion.
-
-These results suggest that the deterministic phase–memory formulation remains stable under moderate non-respiratory motion when combined with lightweight artifact rejection.
+> ⚠️ These results represent an initial robustness check under **moderate walking and posture-related motion only**. They do not establish robustness under coughing, talking, arm-dominant activity, or stronger coupling changes.
 
 ---
 
@@ -262,135 +288,144 @@ These results suggest that the deterministic phase–memory formulation remains 
 ### 7.1  Pipeline Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│          DETERMINISTIC PHASE–MEMORY OPERATOR PIPELINE                        │
-│                                                                              │
-│   ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌────────┐   ┌────────┐  │
-│   │ Chest IMU │──▶│ Preprocess│──▶│ Analytic  │──▶│ Phase  │──▶│Memory  │  │
-│   │(accel +   │   │(detrend + │   │ Signal    │   │velocity│   │ ω̄(t)   │  │
-│   │ gyro)     │   │ bandpass) │   │(Hilbert)  │   │ ω(t)   │   │ (EWA)  │  │
-│   └───────────┘   └───────────┘   └───────────┘   └────────┘   └───┬────┘  │
-│                                                                      │       │
-│                                                        ΔΦ(t) = |ω(t) − ω̄(t)|
-│                                                                      │       │
-│                                                              ┌───────▼────┐  │
-│                                                              │ Threshold  │  │
-│                                                              │ ΔΦ > α·σ_ω│  │
-│                                                              │ + persist. │  │
-│                                                              └───────┬────┘  │
-│                                                                      │       │
-│                                                              ┌───────▼────┐  │
-│                                                              │  INSTABILITY│  │
-│                                                              │   ALERT    │  │
-│                                                              └────────────┘  │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────┐   ┌──────────────────────┐   ┌────────────────────┐
+│  Chest IMU  │──►│     Preprocess       │──►│  Analytic Signal   │
+│(accel/gyro) │   │(detrend + bandpass)  │   │    (Hilbert)       │
+└─────────────┘   └──────────────────────┘   └────────┬───────────┘
+                                                       │
+                                                       ▼
+                                              ┌────────────────────┐
+                                              │   Phase  θ̇(t)     │
+                                              └────────┬───────────┘
+                                                       │
+                                                       ▼
+                                              ┌────────────────────┐
+                                              │  Memory  ω̄(t·Tₘ)  │
+                                              └────────┬───────────┘
+                                                       │
+                                                       ▼
+                                              ┌────────────────────┐
+                                              │  ΔΦ(t) threshold   │
+                                              │   → INSTABILITY    │
+                                              └────────────────────┘
 ```
 
-*Figure 2: Graphical overview of the deterministic phase–memory operator pipeline.*
+*Graphical overview of the proof-of-concept deterministic phase–memory operator pipeline for respiratory instability detection using chest-mounted smartphone IMU signals.*
+
+**Instability metric:** ΔΦ(t) = |ω_inst − ω̄(t)|
 
 ### 7.2  Computational Footprint
 
-The method is **streaming-capable** and **linear-time** in samples. A practical mobile implementation uses:
+The method is **streaming-capable and linear-time** in samples. A practical mobile implementation uses:
 
-1. A causal bandpass filter
-2. A lightweight analytic-signal approximation (Hilbert FIR / quadrature filter)
-3. Rolling window averages
+1. A **causal bandpass** filter
+2. A **lightweight analytic-signal approximation** (Hilbert FIR / quadrature filter)
+3. **Rolling window averages**
 
 All parameters are explicit and auditable.
 
-**Reproducibility layer:** A minimal REST-based experiment interface for monitoring and standardized evaluation hooks is provided in a companion repository (see Appendix A).
+**Reproducibility layer.** A minimal REST-based experiment interface used for monitoring and standardized evaluation hooks is provided in the companion repository (see [Appendix A](#appendix-a-reproducibility-layer-minimal-rest-api)).
 
 ---
 
 ## 8  Reproducible Implementation and Validation Repository
 
-A complete cross-platform reference implementation is publicly available at:
+A complete cross-platform reference implementation is provided at:
 
-> 🔗 **https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring**
+🔗 **[https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring](https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring)**
 
-> 🖥️ **Live demo dashboard:** https://smartphone-based-chest-monitoring.onrender.com
-
-The repository contains:
+### Repository Contents
 
 | Component | Description |
 |---|---|
-| C++ core implementation | Deterministic phase–memory operator for mobile (iOS/Android) |
-| Python reference pipeline | Reproducible validation scripts |
-| BIDMC integration scripts | PhysioNet Respiratory Dataset integration |
-| Perturbation protocols | Stable, drift, pause, burst semi-real protocols |
-| Baseline modules | RMS-envelope, FFT-peak-shift comparison |
-| Metrics evaluation | Detection latency, false alarm rate |
-| Computational profiling | CPU, memory, battery benchmarks |
-| Parameter documentation | Versioned documentation of all operator parameters |
+| `core/` | Deterministic C++ core implementation (iOS / Android deployment) |
+| `python/` | Python reference pipeline for reproducible validation |
+| `data/` | Integration scripts for PhysioNet BIDMC Respiratory Dataset |
+| `protocols/` | Controlled semi-real perturbation protocols (stable, drift, pause, burst) |
+| `baselines/` | Baseline comparison modules (RMS-envelope, FFT-peak-shift) |
+| `metrics/` | Quantitative metrics evaluation (detection latency, false alarm rate) |
+| `profiling/` | Device-level computational profiling (CPU, memory, battery) |
+| `docs/` | Versioned documentation of all operator parameters |
 
-All operator parameters (**T_m**, **α**, **L**, sampling rate, filtering specs) are explicitly documented and auditable.
+All operator parameters (memory window **Tₘ**, sensitivity factor **α**, persistence length **L**, sampling rate, and filtering specifications) are explicitly documented and auditable.
 
-> ⚠️ *The dashboard serves as an experimental demonstration layer and does not constitute a medical device.*
+### Live Demonstration Dashboard
+
+An optional live demonstration dashboard is accessible at:
+
+🌐 **[https://smartphone-based-chest-monitoring.onrender.com](https://smartphone-based-chest-monitoring.onrender.com)**
+
+The dashboard exposes a minimal interactive interface for observing phase–memory dynamics and instability threshold behavior in real time.
+
+> ⚠️ This deployment serves as an **experimental demonstration layer** and does not constitute a medical device.
 
 ---
 
 ## 9  Discussion
 
-The proposed framework introduces an interpretable instability metric grounded in phase–memory divergence and avoids training-time uncertainty associated with data-driven models. The instability score **ΔΦ(t)** is directly tunable via **(T_m, α, L)**, allowing explicit control over sensitivity and persistence criteria.
+The proposed framework introduces an interpretable instability metric grounded in phase–memory divergence and avoids training-time uncertainty associated with data-driven models. The instability score **ΔΦ(t)** is directly parameterized through **(Tₘ, α, L)**, allowing explicit control over memory depth, sensitivity, and persistence criteria.
 
-Because all parameters are deterministic and auditable, the method supports reproducible deployment under mobile resource constraints and predictable behavior across devices.
+Within the restricted scope of the present study, the results support the feasibility of using a deterministic phase–memory observable to detect controlled respiratory deviations in chest-mounted IMU signals.
 
-**Limitations and mitigations:**
+### Limitations
 
-| Limitation | Mitigation Strategy |
+| Limitation | Detail |
 |---|---|
-| Sensor placement sensitivity | Standardized sternal placement protocol |
-| Motion artifacts | Gyroscope-based motion gating |
-| High-amplitude non-respiratory movement | Multi-axis fusion, adaptive filtering, artifact rejection |
+| **Sample size** | Only N = 5 BIDMC recordings; controlled semi-synthetic perturbations rather than spontaneous clinical events |
+| **Baseline comparators** | Restricted to lightweight signal-processing references (RMS, FFT); no clinical reference standard |
+| **Physiological specificity** | Whether ΔΦ(t) can distinguish apnea, hypopnea, Cheyne–Stokes, or hyperventilation requires future study |
+| **Parameter sensitivity** | (Tₘ, α, L) were fixed; no per-subject optimization or full sensitivity analysis |
+| **Baseline definition** | Relies on initial stable segment; longer-term wearable deployment requires adaptive strategies |
+| **Motion robustness** | Tested under moderate walking/posture only; coughing, talking, arm-dominant motion not evaluated |
+| **Hardware scope** | Chest-mounted smartphone is a methodological configuration, not a validated clinical device |
 
-**Future work** includes multi-subject validation, cross-device benchmarking, and evaluation against reference respiratory instrumentation.
+> These limitations **constrain interpretation** but do not invalidate the framework. Whether this approach generalizes to clinically meaningful, heterogeneous, and motion-rich real-world settings remains an open empirical question.
 
 ---
 
-## 10  Application Perspectives
+## 10  Potential Future Directions
 
-> ⚕️ *The deterministic phase–memory operator is **not** intended as a diagnostic medical device but may support assistive monitoring scenarios where awareness of respiratory pattern stability is beneficial.*
+> ⚠️ The deterministic phase–memory operator is **not intended as a diagnostic medical device** and should not be interpreted as validated for clinical use.
 
-### 10.1  Sleep Monitoring and Pattern Screening
+### 10.1  Sleep-Related Pattern Screening
 
-During sleep, changes in respiratory regularity may precede clinically relevant disturbances. The instability metric **ΔΦ(t)** enables real-time detection of emerging deviations and may support vibration-based alerts or retrospective sleep-pattern analysis. The framework is intended for **screening-level** pattern monitoring and does **not** replace polysomnography or clinical sleep diagnostics.
+During sleep, changes in respiratory regularity may precede clinically relevant disturbances. ΔΦ(t) could be explored as a screening-level indicator of deviations from baseline respiratory pattern stability or for retrospective pattern analysis. The present work **does not establish suitability** for sleep diagnostics, unattended sleep monitoring, or replacement of polysomnography.
 
 ### 10.2  Stress and Hyperventilation Awareness
 
-Acute stress and hyperventilation involve rapid shifts in respiratory frequency and phase dynamics. Because ΔΦ(t) measures divergence from short-term phase memory, the method may support **biofeedback-oriented monitoring** for stress management, guided breathing exercises, or mindfulness training.
+Acute stress and hyperventilation are associated with shifts in respiratory frequency and phase dynamics. Future work may examine whether the framework is useful for biofeedback-oriented monitoring in guided breathing exercises, stress-awareness tools, or mindfulness-related respiratory training. **Such applications remain hypothetical** until tested in dedicated datasets and intervention protocols.
 
 ### 10.3  Respiratory Rehabilitation and Training
 
-In respiratory physiotherapy or post-illness rehabilitation, tracking breathing stability may assist adherence to controlled breathing protocols. The deterministic formulation allows reproducible, on-device implementation without reliance on data-trained classification models.
+Future studies may investigate whether tracking breathing stability can support adherence to controlled breathing protocols in respiratory physiotherapy or post-illness rehabilitation. The present study **does not validate rehabilitation efficacy or patient benefit.**
 
-### 10.4  Chronic Respiratory Condition Monitoring (Assistive)
+### 10.4  Chronic Respiratory Condition Monitoring
 
-For individuals with chronic respiratory conditions (e.g., asthma or COPD), the framework may serve as a **trend-level monitoring tool** to identify deviations from a personalized baseline. It is not designed to replace clinical assessment, spirometry, oxygen saturation monitoring, or physician-directed care.
+For individuals with asthma or COPD, the proposed framework could in principle be explored as a trend-level instability indicator relative to a personalized baseline. At present, **no claim is made** that the operator is suitable for clinical monitoring, treatment guidance, or replacement of established assessment methods such as spirometry, oxygen saturation monitoring, or physician-directed care.
 
 ---
 
 ## 11  Conclusion
 
-We presented a deterministic phase–memory operator and a transparent instability score **ΔΦ(t)** for early respiratory instability detection using chest-mounted smartphone IMU sensing.
+We presented a **proof-of-concept deterministic phase–memory operator** and a transparent instability score **ΔΦ(t)** for respiratory instability detection in chest-mounted smartphone IMU signals.
 
-The method replaces opaque classification models with explicit, phase-based decision logic, enabling:
+Rather than relying on opaque classification models, the proposed framework uses explicit phase-based decision logic with auditable parameters and streaming-capable computation. Under the restricted conditions of the present controlled evaluation, the operator showed interpretable responses to representative semi-synthetic perturbation regimes and remained compatible with lightweight implementation.
 
-- ✅ Auditability
-- ✅ Parameter transparency
-- ✅ Predictable real-time behavior on mobile hardware
+> **Main contribution:** Define a transparent and reproducible operator-level framework for chest-based IMU respiratory instability sensing under controlled proof-of-concept conditions.
 
-A controlled validation protocol and public reference implementation support reproducibility. The proposed framework provides a computationally lightweight and interpretable foundation for **assistive wearable respiratory monitoring** applications.
+Future work must determine whether the proposed instability observable retains physiological specificity, robustness, and practical utility in larger cohorts, under broader motion conditions, and against reference-standard respiratory instrumentation.
 
 ---
 
 ## Ethics Statement
 
-No human or animal subjects were involved in the preparation of this manuscript.
+No new human or animal experiments were conducted for this study. The analysis used publicly available de-identified physiological recordings and controlled derived perturbation protocols.
 
 ## Data Availability Statement
 
-The reference implementation, validation scripts, baseline comparison modules, and reproducibility infrastructure are publicly available at:
-**https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring**
+The reference implementation, validation scripts, baseline comparison modules, and reproducibility infrastructure described in this manuscript are publicly available at:
+
+🔗 **[https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring](https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring)**
 
 ## Funding
 
@@ -402,19 +437,19 @@ The authors declare no conflict of interest.
 
 ## Author Contributions
 
-- **M.K.** conceived the deterministic phase–memory operator framework and drafted the manuscript.
-- **D.M.F.** contributed implementation considerations for mobile and cross-platform deployment and reviewed the manuscript for engineering clarity.
-- All authors approved the final version.
+**M.K.** conceived the deterministic phase–memory operator framework and drafted the manuscript.  
+**D.M.F.** contributed implementation considerations for mobile and cross-platform deployment and reviewed the manuscript for engineering clarity.  
+All authors approved the final version.
 
 ## AI Statement
 
-No generative AI models were used for data generation, signal analysis, or automated decision-making in the proposed method.
+No generative AI models were used for data generation, signal analysis, or automated decision-making in the proposed method. Any later use of language-editing assistance, if applicable, will be disclosed at submission.
 
 ---
 
-## Appendix A — Reproducibility Layer: Minimal REST API
+## Appendix A  Reproducibility Layer: Minimal REST API
 
-The prototype exposes a minimal REST interface for monitoring experiments and standardizing evaluation.
+The prototype may expose a minimal REST interface for monitoring experiments and standardizing evaluation. A short illustrative example is shown below.
 
 ```python
 import requests
@@ -443,62 +478,60 @@ state = requests.get(f"{BASE}/network/state").json()
 print(f"R(t) = {state['order_parameter']:.4f}")
 ```
 
-*Listing 1: Example REST usage for monitoring (illustrative).*
-
 ---
 
 ## References
 
-[1] B. Boashash, "Estimating and interpreting the instantaneous frequency of a signal," *Proceedings of the IEEE* 80, 520–538 (1992).
+[1] B. Boashash, "Estimating and interpreting the instantaneous frequency of a signal. I. Fundamentals," *Proceedings of the IEEE*, vol. 80, no. 4, pp. 520–538, 1992. doi:10.1109/5.135376.
 
-[2] L. Cohen, *Time-Frequency Analysis* (Prentice Hall, 1995).
+[2] L. Cohen, *Time-Frequency Analysis*. Prentice Hall, Upper Saddle River, NJ, USA, 1995. ISBN: 0-13-594532-1.
 
-[3] J. M. Bland and D. G. Altman, "Statistical methods for assessing agreement between two methods of clinical measurement," *The Lancet* 327(8476), 307–310 (1986).
+[3] J. M. Bland and D. G. Altman, "Statistical methods for assessing agreement between two methods of clinical measurement," *The Lancet*, vol. 327, no. 8476, pp. 307–310, 1986.
 
-[4] P. Welch, "The use of fast Fourier transform for the estimation of power spectra," *IEEE Trans. Audio Electroacoust.* 15, 70–73 (1967).
+[4] P. Welch, "The use of fast Fourier transform for the estimation of power spectra: A method based on time averaging over short, modified periodograms," *IEEE Transactions on Audio and Electroacoustics*, vol. 15, no. 2, pp. 70–73, 1967. doi:10.1109/TAU.1967.1161901.
 
-[5] P. H. Charlton et al., "Breathing rate estimation from physiological signals: a review," *Physiological Measurement* 37 (2016).
+[5] Charlton PH, Birrenkott DA, Bonnici T, et al., "Breathing rate estimation from the electrocardiogram and photoplethysmogram: A review," *IEEE Reviews in Biomedical Engineering*, 2018;11:2–20. doi:10.1109/RBME.2017.2763681.
 
-[6] C. Massaroni et al., "Contact-based methods for measuring respiratory rate: a review," *Sensors* 19 (2019).
+[6] Massaroni C, Nicolò A, Lo Presti D, et al., "Contact-based methods for measuring respiratory rate," *Sensors (Basel)*, 2019;19(4):908. doi:10.3390/s19040908.
 
-[7] W. Karlen et al., "Respiratory rate monitoring: methods and clinical perspectives," (2013).
+[7] Vitazkova D, Foltan E, Kosnacova H, et al., "Advances in Respiratory Monitoring: A Comprehensive Review of Wearable and Remote Technologies," *Biosensors (Basel)*, 2024;14(2):90. doi:10.3390/bios14020090.
 
-[8] S. Khan et al., "Smartphone-based respiratory monitoring: opportunities and challenges," *IEEE Access* (2021).
+[8] Vignali E, Gasparotti E, Miglior L, et al., "A New Smartphone-Based Method for Remote Health Monitoring: Assessment of Respiratory Kinematics," *Electronics*, 2024;13(6):1132. doi:10.3390/electronics13061132.
 
-[9] J. Kim et al., "Mobile health respiratory monitoring and validation considerations," *JMIR mHealth and uHealth* (2021).
+[9] S. Valentine, A. C. Cunningham, B. Klasmer, et al., "Smartphone movement sensors for the remote monitoring of respiratory rates: Technical validation," *JMIR mHealth and uHealth*, vol. 8, 2020. doi:10.1177/20552076221089090.
 
-[10] S. Coyle et al., "Real-time wearable signal processing for health monitoring: considerations and pitfalls," *IEEE J. Biomed. Health Inform.* (2021).
+[10] Choi SH, Yoon H, Baek HJ, Long X., "Biomedical Signal Processing and Health Monitoring Based on Sensors," *Sensors*, 2025;25(3):641. doi:10.3390/s25030641.
 
-[11] E. Smets et al., "Large-scale evaluation/validation considerations for wearable physiological monitoring," *Nature Medicine* (2021).
+[11] Scano A, Re R, Perego P, Mastropietro A., "Wearable Sensors for Human Health Monitoring and Analysis," *Sensors*, 2026;26(2):575. doi:10.3390/s26020575.
 
-[12] S. Benatti et al., "Energy-efficient wearable computing for continuous sensing," (2021).
+[12] Zhao C, Liu D, Xu G, et al., "Recent advances in fiber optic sensors for respiratory monitoring," *Optical Fiber Technology*, 2022;72:103000. doi:10.1016/j.yofte.2022.103000.
 
-[13] C. Zhao et al., "Recent advances in fiber optic sensors for respiratory monitoring," *Biosensors and Bioelectronics* (2022).
+[13] S. Stankoski, I. Kiprijanovska, I. Mavridou, et al., "Breathing Rate Estimation from Head-Worn Photoplethysmography Sensor Data Using Machine Learning," *Sensors*, vol. 22, no. 6, p. 2079, 2022. doi:10.3390/s22062079.
 
-[14] S. Stankoski et al., "Breathing rate estimation from head-worn inertial sensors," *Sensors* 22(6), 2079 (2022).
+[14] T. Hussain, S. Ullah, R. Fernández-García, and I. Gil, "Wearable Sensors for Respiration Monitoring: A Review," *Sensors*, vol. 23, no. 17, p. 7518, 2023. doi:10.3390/s23177518.
 
-[15] H. Liu et al., "Wearable respiration monitoring: sensors, systems, and algorithms (review)," *Biosensors* (2022).
+[15] L. Yu, G. Liu, H. Zhang, and D. Wen, "Wearable respiratory sensors for non-invasive healthcare monitoring: applications and intelligent technologies," *Nanoscale*, vol. 18, pp. 3496–3512, 2026. doi:10.1039/D5NR04233J.
 
-[16] S. Nemati et al., "Wearable sensing and digital biomarkers in clinical monitoring," *npj Digital Medicine* (2022).
+[16] X. Jin, L. Zha, F. Wang, Y. Wang, and X. Zhang, "Fully integrated wearable humidity sensor for respiration monitoring," *Frontiers in Bioengineering and Biotechnology*, vol. 10, 2022, Art. 1070855. doi:10.3389/fbioe.2022.1070855.
 
-[17] S. Roy et al., "Explainable pipelines for wearable health monitoring: a survey," (2023).
+[17] J. Cherian, G. Mascia, D. Kairamkonda, et al., "Wearable sensing for clinical physiology monitoring: emerging paradigms," *Physiology (Bethesda)*, 2025. doi:10.1152/physiol.00039.2024.
 
-[18] D. Brown et al., "Digital biomarkers in respiratory disease and remote monitoring," *The Lancet Digital Health* (2023).
+[18] P. Daniore, V. Nittas, C. Haag, et al., "From wearable sensor data to digital biomarker development: ten lessons learned and a framework proposal," *npj Digital Medicine*, vol. 7, p. 161, 2024. doi:10.1038/s41746-024-01151-3.
 
-[19] H. Assael et al., "RespEar: an ear-worn system for respiration monitoring," *Proc. ACM IMWUT* (2023).
+[19] Y. Abdelal, M. Aupetit, A. Baggag, D. Al-Thani, "Exploring the Applications of Explainability in Wearable Data Analytics: Systematic Literature Review," *J. Med. Internet Res.*, vol. 26, e53863, 2024. doi:10.2196/53863.
 
-[20] A. Author et al., "Smartphone IMU-based respiratory monitoring under motion: evaluation study," (2023).
+[20] N. Gomes, M. Pato, A. R. Lourenço, and N. Datia, "A Survey on Wearable Sensors for Mental Health Monitoring," *Sensors*, vol. 23, no. 3, 1330, 2023. doi:10.3390/s23031330.
 
-[21] B. Author et al., "Explainability and auditability in wearable sensing for health," (2024).
+[21] J. Dunn, A. Coravos, M. Fanarjian, et al., "Remote Digital Technologies for Improving the Care of People with Respiratory Disorders," *Lancet Digit. Health*, vol. 6, no. 4, e291–e298, 2024. doi:10.1016/S2589-7500(23)00248-0.
 
-[22] Z. Peng et al., "Phase-based analysis methods for biomedical time series: applications and pitfalls," (2022).
+[22] A. Angelucci and A. Aliverti, "An IMU-Based Wearable System for Respiratory Rate Estimation in Static and Dynamic Conditions," *Cardiovasc. Eng. Technol.*, vol. 14, no. 3, pp. 351–363, 2023. doi:10.1007/s13239-023-00657-3.
 
-[23] J. Xu et al., "Low-power on-device physiological inference on mobile hardware," (2022).
+[23] D. Navakauskas and M. Dumpis, "Wearable Sensor-Based Human Activity Recognition: Performance and Interpretability of Dynamic Neural Networks," *Sensors*, vol. 25, no. 14, 4420, 2025. doi:10.3390/s25144420.
 
-[24] C. Author et al., "Wearable respiratory monitoring: 2024 update and benchmarking," (2024).
+[24] R. Regan and W. S. Simi, "On the development of low power wearable devices for assessment of physiological vital parameters: a systematic review," *Journal of Public Health*, vol. 32, pp. 1093–1108, 2023. doi:10.1007/s10389-023-01893-6.
 
-[25] G. D. Clifford et al., "PhysioNet: updates and perspectives for physiologic signal research," (2022).
+[25] M. Krüger, "Deterministic Detection of Information-Driven Regime Transitions in Wearable Physiological Signals: A Spiral-Time Operator Framework," *Zenodo*, 2026. doi:10.5281/zenodo.18799292.
 
-[26] M. Author et al., "Best practices for reproducible mobile health signal processing," (2021).
+---
 
-[27] N. Author et al., "REST interfaces and reproducibility layers for mHealth experiments," (2023).
+*© Marcel Krüger & Don Michael Feeney Jr. — Submitted to Smart Wearable Technology (SWT)*
