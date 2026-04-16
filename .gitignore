@@ -26,7 +26,8 @@ Thumbs.db
 *.tmp
 
 # Generated validation figures (produced at runtime by validate_bidmc.py)
-validation/figures/
+validation/figures/*
+!validation/figures/motion_gating_comparison.png
 
 # Python bytecode cache
 __pycache__/
