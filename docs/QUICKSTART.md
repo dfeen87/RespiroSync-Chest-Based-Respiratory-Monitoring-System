@@ -18,19 +18,18 @@ We're working on simple apps you can just install:
 iOS: [Link to TestFlight Beta] (waiting approval)
 Android: [Link to APK] (in progress)
 
-Want to help build these? See CONTRIBUTING.md
 
 Option 2: For Developers - Build It Yourself
 iOS (Xcode Required)
 
 Clone the repo:
 
-bash   git clone https://github.com/dfeen87/respirosync.git
+bash   git clone https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring
    cd respirosync
 
 Open the example project:
 
-bash   cd examples/ios
+bash   cd ios/
    open RespiroSyncDemo.xcodeproj
 
 Connect your iPhone and hit Run (▶️ button in Xcode)
@@ -40,12 +39,12 @@ Android (Android Studio Required)
 
 Clone the repo:
 
-bash   git clone https://github.com/dfeen87/respirosync.git
+bash   git clone https://github.com/dfeen87/Smartphone-Based-Chest-Monitoring
    cd respirosync
 
 Open in Android Studio:
 
-   File → Open → Select respirosync/examples/android
+   File → Open → Select android/
 
 Connect your Android phone and hit Run (▶️ button)
 Put phone in chest vest and start session
@@ -188,7 +187,6 @@ Once you've tested it:
 🐛 Report bugs on GitHub Issues
 💬 Share your results in Discussions
 📸 Post your DIY vest (we'll feature it!)
-🤝 Help improve it - see CONTRIBUTING.md
 
 Get Help
 
