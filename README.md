@@ -412,7 +412,7 @@ phase–memory operator (PAPER.md §3–4) via a REST API and a browser UI.
 | Endpoint | Description |
 |----------|-------------|
 | `GET /` | Dashboard UI — status, metrics, configuration, live logs, validation |
-| `GET /api/status` | System status (version, uptime, pipeline name) |
+| `GET /ping` | System status (version, uptime, pipeline name) |
 | `GET /api/logs?n=50` | Last *n* structured log entries |
 | `GET /api/config` | Current operator parameters (M, α, baseline, fs) |
 | `POST /api/config` | Update operator parameters at runtime |
@@ -431,11 +431,11 @@ phase–memory operator (PAPER.md §3–4) via a REST API and a browser UI.
 3. Connect the repository and select **"Use render.yaml"** — Render will read
    [`render.yaml`](render.yaml) automatically.
 4. Click **Deploy**. Render will:
-   - run `pip install -r server/requirements.txt`
+   - run `pip install -r requirements.txt`
    - start `python server/app.py` bound to the `$PORT` it provides
 
 > The service is defined in [`render.yaml`](render.yaml) with
-> `healthCheckPath: /api/status` so Render can verify liveness automatically.
+> `healthCheckPath: /ping` so Render can verify liveness automatically.
 
 ### Environment variables
 
@@ -476,7 +476,7 @@ entries as JSON and is polled every 5 seconds by the browser UI.
 ### Running locally
 
 ```bash
-pip install -r server/requirements.txt
+pip install -r requirements.txt
 python server/app.py          # listens on http://localhost:5000
 # or with a custom port:
 PORT=8080 python server/app.py
