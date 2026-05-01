@@ -842,14 +842,16 @@ If you use RespiroSync in academic or technical work, please cite:
 
 ## License
 
-This project is available for **non‑commercial use only** under the terms of the included LICENSE file.  
-Commercial use requires a separate paid license.
+This project is 100% open-source under the MIT License.
 
 ---
 
 ## Acknowledgments
 
 This project was developed with a combination of original ideas and math, hands‑on coding, and support from advanced AI systems. I would like to acknowledge **Microsoft Copilot**, and **Anthropic Claude**, for their meaningful assistance in refining concepts, improving clarity, and strengthening the overall quality of this work.
+
+## Enterprise Consulting & Integration
+This architecture is fully open-source under the MIT License. If your organization requires custom scaling, proprietary integration, or dedicated technical consulting to deploy these models at an enterprise level, please reach out at: dfeen87@gmail.com
 
 ## Contact
 
